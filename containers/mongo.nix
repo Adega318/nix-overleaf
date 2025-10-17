@@ -1,6 +1,6 @@
 { config, lib, ... }:
 let
-  inherit (lib) mkIf;
+  inherit (lib) mkIf mkOverride;
   cfg = config.services.overleaf;
 in {
   config = mkIf cfg.enable {
@@ -43,7 +43,7 @@ in {
       ];
     };
     systemd.services."podman-mongo" = {
-      serviceConfig = { Restart = lib.mkOverride 90 "always"; };
+      serviceConfig = { Restart = mkOverride 90 "always"; };
       after = [ "podman-network-overleaf_default.service" ];
       requires = [ "podman-network-overleaf_default.service" ];
       partOf = [ "podman-compose-overleaf-root.target" ];
