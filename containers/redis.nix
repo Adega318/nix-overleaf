@@ -14,7 +14,7 @@ in {
     };
 
     virtualisation.oci-containers.containers."redis" = {
-      user = "${cfg.user}:${cfg.group}";
+      #user = "${cfg.user}:${cfg.group}";
       image = "redis:6.2";
       volumes = [ "${cfg.dataDir}/redis_data:/data:rw" ];
       log-driver = "journald";

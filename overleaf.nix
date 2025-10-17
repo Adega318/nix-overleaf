@@ -71,6 +71,7 @@ in {
         "overleaf" = {
           isSystemUser = true;
           inherit (cfg) group;
+          shell = "/sbin/nologin";
         };
       };
       groups = mkIf (cfg.group == "overleaf") { "overleaf" = { }; };
