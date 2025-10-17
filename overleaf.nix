@@ -67,7 +67,10 @@ in {
     };
 
     users = {
-      users.${cfg.user} = mkDefault { isSystemUser = true; };
+      users.${cfg.user} = mkDefault {
+        isSystemUser = true;
+        inherit (cfg) group;
+      };
       groups.${cfg.group} = { members = [ cfg.user ]; };
     };
 
