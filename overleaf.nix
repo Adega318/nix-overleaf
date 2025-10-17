@@ -67,17 +67,20 @@ in {
     };
 
     users = {
-      users.${cfg.user} = mkDefault {
-        isSystemUser = true;
-        inherit (cfg) group;
+      users = mkIf (cfg.user == "overleaf") {
+        "overleaf" = {
+          isSystemUser = true;
+          inherit (cfg) group;
+        };
       };
-      groups.${cfg.group} = { members = [ cfg.user ]; };
+      groups = mkIf (cfg.group == "overleaf") { "overleaf" = { }; };
     };
 
     virtualisation = {
       podman = {
         enable = true;
         autoPrune.enable = true;
+        dockerCompat = true;
       };
     };
 

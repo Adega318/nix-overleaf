@@ -21,7 +21,11 @@ in {
       extraOptions = [ "--network-alias=redis" "--network=overleaf_default" ];
     };
     systemd.services."podman-redis" = {
-      serviceConfig = { Restart = mkOverride 90 "always"; };
+      serviceConfig = {
+        Restart = mkOverride 90 "always";
+        User = cfg.user;
+        Group = cfg.group;
+      };
       after = [ "podman-network-overleaf_default.service" ];
       requires = [ "podman-network-overleaf_default.service" ];
       partOf = [ "podman-compose-overleaf-root.target" ];
