@@ -21,6 +21,7 @@ in {
     };
 
     virtualisation.oci-containers.containers."mongo" = {
+      user = "${cfg.user}:${cfg.group}";
       image = "mongo:6.0";
       environment = { "MONGO_INITDB_DATABASE" = "sharelatex"; };
       volumes = [

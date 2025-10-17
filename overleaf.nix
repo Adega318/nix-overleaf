@@ -65,6 +65,11 @@ in {
       };
     };
 
+    users = {
+      users.${cfg.user} = lib.mkDefault { isSystemUser = true; };
+      groups.${cfg.group} = { members = [ cfg.user ]; };
+    };
+
     virtualisation = {
       podman = {
         enable = true;

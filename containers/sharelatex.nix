@@ -12,6 +12,7 @@ in {
 
   config = mkIf cfg.enable {
     virtualisation.oci-containers.containers."sharelatex" = {
+      user = "${cfg.user}:${cfg.group}";
       image = "sharelatex/sharelatex";
       environment = {
         "DOCKER_RUNNER" = "true";
