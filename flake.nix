@@ -1,21 +1,16 @@
 {
   description = "Overleaf for nixos";
 
-  inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+  inputs = { nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable"; };
 
-    systems.url = "github:nix-systems/default";
+  /* outputs = inputs:
+     inputs.flake-parts.lib.mkFlake { inherit inputs; } {
+       systems = import inputs.systems;
+       imports = [ ./overleaf.nix ];
+     };
+  */
 
-    flake-parts = {
-      url = "github:hercules-ci/flake-parts";
-      inputs.nixpkgs-lib.follows = "nixpkgs";
-    };
+  outputs = inputs@{ self, nixpkgs, ... }: {
+    nixosModules.default = import ./overleaf.nix inputs;
   };
-
-  outputs = inputs:
-    inputs.flake-parts.lib.mkFlake { inherit inputs; } {
-      systems = import inputs.systems;
-      imports = [ ./overleaf.nix ];
-    };
 }
-

@@ -4,14 +4,6 @@ let
   cfg = config.services.overleaf;
 in {
   config = mkIf cfg.enable {
-    environment.etc."overleaf/mongodb-init-replica-set.js" = {
-      inherit (cfg) user group;
-      text = ''
-        /* eslint-disable no-undef */
-
-        rs.initiate({ _id: 'overleaf', members: [{ _id: 0, host: 'mongo:27017' }] })
-      '';
-    };
     systemd = {
       tmpfiles.settings.overleafDirs = {
         "${cfg.dataDir}/mongo_data"."d" = {
@@ -19,6 +11,15 @@ in {
           inherit (cfg) user group;
         };
       };
+    };
+
+    environment.etc."overleaf/mongodb-init-replica-set.js" = {
+      inherit (cfg) user group;
+      text = ''
+        /* eslint-disable no-undef */
+
+        rs.initiate({ _id: 'overleaf', members: [{ _id: 0, host: 'mongo:27017' }] })
+      '';
     };
 
     virtualisation.oci-containers.containers."mongo" = {
