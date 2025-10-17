@@ -1,6 +1,6 @@
 { config, pkgs, lib, ... }:
 let
-  inherit (lib) mkEnableOption mkOption mkIf mkDefault mkOverride;
+  inherit (lib) mkEnableOption mkOption mkIf mkDefault mkForce;
   inherit (lib.types) str path bool;
   cfg = config.services.overleaf;
 in {
@@ -80,11 +80,9 @@ in {
     };
 
     # Enable container name DNS for all Podman networks.
-    networking.firewall = {
-      allowedTCPPorts = mkIf cfg.openFirewall [ 80 ];
-    };
+    networking.firewall = { allowedTCPPorts = mkIf cfg.openFirewall [ 80 ]; };
 
-    virtualisation.oci-containers.backend = "podman";
+    virtualisation.oci-containers.backend = mkForce "podman";
 
     # Networks
     systemd.services."podman-network-overleaf_default" = {
