@@ -84,7 +84,7 @@ in {
       allowedTCPPorts = mkIf cfg.openFirewall [ 80 ];
     };
 
-    virtualisation.oci-containers.backend = mkOverride "podman";
+    virtualisation.oci-containers.backend = "podman";
 
     # Networks
     systemd.services."podman-network-overleaf_default" = {
