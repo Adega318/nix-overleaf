@@ -1,7 +1,8 @@
 { config, pkgs, lib, ... }:
-
-with lib;
-let cfg = config.services.overleaf;
+let
+  inherit (lib) mkEnableOption mkOption mkIf;
+  inherit (lib.types) str path bool;
+  cfg = config.services.overleaf;
 in {
   imports = [
     ./containers/sharelatex.nix

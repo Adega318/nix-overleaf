@@ -1,6 +1,7 @@
 { config, lib, ... }:
-with lib;
-let cfg = config.services.overleaf;
+let
+  inherit (lib) mkIf;
+  cfg = config.services.overleaf;
 in {
   config = mkIf cfg.enable {
     systemd = {

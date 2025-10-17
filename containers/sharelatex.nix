@@ -1,10 +1,12 @@
 { config, lib, ... }:
-with lib;
-let cfg = config.services.overleaf;
+let
+  inherit (lib) mkOption mkIf;
+  inherit (lib.types) port;
+  cfg = config.services.overleaf;
 in {
   options.services.overleaf = {
-    port = lib.mkOption {
-      type = lib.types.port;
+    port = mkOption {
+      type = port;
       description = "Port Number";
       default = 80;
     };
