@@ -1,8 +1,17 @@
 { config, lib, ... }:
 let
-  inherit (lib) mkIf mkOverride;
+  inherit (lib) mkOption mkIf mkOverride;
+  inherit (lib.types) str;
   cfg = config.services.overleaf;
 in {
+  options.services.overleaf.mongo = {
+    url = mkOption {
+      type = str;
+      description = "External url for MongoDB";
+      default = "mongodb://mongo/sharelatex";
+    };
+  };
+
   config = mkIf cfg.enable {
     systemd = {
       tmpfiles.settings.overleafDirs = {
@@ -13,41 +22,32 @@ in {
       };
     };
 
-    environment.etc."overleaf/mongodb-init-replica-set.js" = {
-      inherit (cfg) user group;
-      text = ''
-        /* eslint-disable no-undef */
-
-        rs.initiate({ _id: 'overleaf', members: [{ _id: 0, host: 'mongo:27017' }] })
-      '';
-    };
-
     virtualisation.oci-containers.containers."mongo" = {
-      #user = "${cfg.user}:${cfg.group}";
+      serviceName = "overleaf-mongo";
       image = "mongo:6.0";
-      environment = { "MONGO_INITDB_DATABASE" = "sharelatex"; };
-      volumes = [
-        "/etc/overleaf/mongodb-init-replica-set.js:/docker-entrypoint-initdb.d/mongodb-init-replica-set.js:rw"
-        "${cfg.dataDir}/mongo_data:/data/db:rw"
-      ];
+
+      environment = { MONGO_INITDB_DATABASE = "sharelatex"; };
+
+      volumes = [ "${cfg.dataDir}/mongo_data:/data/db:rw" ];
       cmd = [ "--replSet" "overleaf" ];
-      log-driver = "journald";
       extraOptions = [
-        "--add-host=mongo:127.0.0.1"
         "--health-cmd=echo 'db.stats().ok' | mongosh localhost:27017/test --quiet"
         "--health-interval=10s"
         "--health-retries=5"
         "--health-timeout=10s"
+
         "--network-alias=mongo"
-        "--network=overleaf_default"
+        "--network=overleaf"
+        "--expose=27017"
       ];
     };
-    systemd.services."podman-mongo" = {
+
+    systemd.services."overleaf-mongo" = {
       serviceConfig = { Restart = mkOverride 90 "always"; };
-      after = [ "podman-network-overleaf_default.service" ];
-      requires = [ "podman-network-overleaf_default.service" ];
-      partOf = [ "podman-compose-overleaf-root.target" ];
-      wantedBy = [ "podman-compose-overleaf-root.target" ];
+      after = [ "overleaf-network.service" ];
+      requires = [ "overleaf-network.service" ];
+      partOf = [ "overleaf-root.target" ];
+      wantedBy = [ "overleaf-root.target" ];
     };
   };
 }

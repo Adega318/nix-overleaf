@@ -1,8 +1,11 @@
 { config, lib, ... }:
 let
   inherit (lib) mkOption mkIf mkOverride;
-  inherit (lib.types) port;
+  inherit (lib.types) port str;
   cfg = config.services.overleaf;
+
+  containerDataPath = "/var/lib/overleaf";
+  containerLogPath = "/var/log/overleaf";
 in {
   options.services.overleaf = {
     port = mkOption {
@@ -10,41 +13,57 @@ in {
       description = "Port Number";
       default = 80;
     };
+
+    host = mkOption {
+      type = str;
+      description = "External host for Overleaf.";
+      default = "127.0.0.1";
+    };
   };
 
   config = mkIf cfg.enable {
     virtualisation.oci-containers.containers."sharelatex" = {
-      #user = "${cfg.user}:${cfg.group}";
+      serviceName = "overleaf-sharelatex";
       image = "sharelatex/sharelatex";
+
       environment = {
-        "DOCKER_RUNNER" = "true";
-        "EMAIL_CONFIRMATION_DISABLED" = "true";
-        "ENABLED_LINKED_FILE_TYPES" = "project_file,project_output_file";
-        "ENABLE_CONVERSIONS" = "true";
-        "OVERLEAF_APP_NAME" = "Overleaf Community Edition";
-        "OVERLEAF_MONGO_URL" = "mongodb://mongo/sharelatex";
-        "OVERLEAF_REDIS_HOST" = "redis";
-        "REDIS_HOST" = "redis";
-        "SANDBOXED_COMPILES" = "true";
-        "SANDBOXED_COMPILES_HOST_DIR_COMPILES" =
-          "/home/user/sharelatex_data/data/compiles";
-        "SANDBOXED_COMPILES_HOST_DIR_OUTPUT" =
-          "/home/user/sharelatex_data/data/output";
-        "SANDBOXED_COMPILES_SIBLING_CONTAINERS" = "true";
+        # variabes.env configurations.
+        OVERLEAF_APP_NAME = "Our Overleaf Instance";
+        ENABLED_LINKED_FILE_TYPES = "project_file,project_output_file";
+        ENABLE_CONVERSIONS = "true";
+        EMAIL_CONFIRMATION_DISABLED = "true";
+        EXTERNAL_AUTH = "none";
+
+        # baseline configs and overleaf.rc configs.
+        GIT_BRIDGE_ENABLED = "false";
+        GIT_BRIDGE_HOST = "git-bridge";
+        GIT_BRIDGE_PORT = "8000";
+        REDIS_HOST = cfg.redis.host;
+        REDIS_PORT = toString cfg.redis.port;
+        V1_HISTORY_URL = "http://sharelatex:3100/api";
+
+        # extas
+        OVERLEAF_IN_CONTAINER_DATA_PATH = containerDataPath;
+        OVERLEAF_IN_CONTAINER_LOG_PATH = containerLogPath;
+        OVERLEAF_MONGO_URL = cfg.mongo.url;
+        OVERLEAF_REDIS_HOST = cfg.redis.host;
       };
-      volumes = [ "${cfg.projectsDir}:/var/lib/overleaf:rw" ];
-      ports = [ "${toString cfg.port}:80/tcp" ];
+
+      volumes = [
+        "${cfg.projectsDir}:${containerDataPath}:rw"
+        "${cfg.logDir}:${containerLogPath}:rw"
+      ];
+      ports = [ "${cfg.host}:${toString cfg.port}:80" ];
       dependsOn = [ "mongo" "redis" ];
-      log-driver = "journald";
-      extraOptions =
-        [ "--network-alias=sharelatex" "--network=overleaf_default" ];
+      extraOptions = [ "--network-alias=sharelatex" "--network=overleaf" ];
     };
-    systemd.services."podman-sharelatex" = {
+
+    systemd.services."overleaf-sharelatex" = {
       serviceConfig = { Restart = mkOverride 90 "always"; };
-      after = [ "podman-network-overleaf_default.service" ];
-      requires = [ "podman-network-overleaf_default.service" ];
-      partOf = [ "podman-compose-overleaf-root.target" ];
-      wantedBy = [ "podman-compose-overleaf-root.target" ];
+      after = [ "overleaf-network.service" ];
+      requires = [ "overleaf-network.service" ];
+      partOf = [ "overleaf-root.target" ];
+      wantedBy = [ "overleaf-root.target" ];
     };
   };
 }

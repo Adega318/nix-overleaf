@@ -1,6 +1,6 @@
 { config, pkgs, lib, ... }:
 let
-  inherit (lib) mkEnableOption mkOption mkIf mkDefault mkForce;
+  inherit (lib) mkEnableOption mkOption mkIf mkForce;
   inherit (lib.types) str path bool;
   cfg = config.services.overleaf;
 in {
@@ -42,6 +42,15 @@ in {
       '';
     };
 
+    logDir = mkOption {
+      type = path;
+      default = "${cfg.dataDir}/logs";
+      defaultText = "\${cfg.dataDir}/logs";
+      description = ''
+        Directory to store Overleaf logs.
+      '';
+    };
+
     openFirewall = mkOption {
       type = bool;
       default = false;
@@ -60,6 +69,11 @@ in {
         };
 
         "${cfg.projectsDir}"."d" = {
+          mode = "700";
+          inherit (cfg) user group;
+        };
+
+        "${cfg.logDir}"."d" = {
           mode = "700";
           inherit (cfg) user group;
         };
@@ -85,27 +99,29 @@ in {
     };
 
     # Enable container name DNS for all Podman networks.
-    networking.firewall = { allowedTCPPorts = mkIf cfg.openFirewall [ 80 ]; };
+    networking.firewall = {
+      allowedTCPPorts = mkIf cfg.openFirewall [ cfg.port ];
+    };
 
     virtualisation.oci-containers.backend = mkForce "podman";
 
     # Networks
-    systemd.services."podman-network-overleaf_default" = {
+    systemd.services."overleaf-network" = {
       path = [ pkgs.podman ];
       serviceConfig = {
         Type = "oneshot";
         RemainAfterExit = true;
-        ExecStop = "podman network rm -f overleaf_default";
+        ExecStop = "podman network rm -f overleaf";
       };
       script = ''
-        podman network inspect overleaf_default || podman network create overleaf_default
+        podman network inspect overleaf || podman network create overleaf
       '';
-      partOf = [ "podman-compose-overleaf-root.target" ];
-      wantedBy = [ "podman-compose-overleaf-root.target" ];
+      partOf = [ "overleaf-root.target" ];
+      wantedBy = [ "overleaf-root.target" ];
     };
 
     # Root service
-    systemd.targets."podman-compose-overleaf-root" = {
+    systemd.targets."overleaf-root" = {
       unitConfig = { Description = "Root Overleaf service."; };
       wantedBy = [ "multi-user.target" ];
     };
